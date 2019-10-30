@@ -1,0 +1,91 @@
+const SportupToken = artifacts.require("SportupToken");
+var BigNumber = web3.utils.BN;
+
+contract("SportupToken", accounts => {
+  var defaultAccount = accounts[0];
+  var user1 = accounts[1];
+  var user2 = accounts[2];
+  var user3 = accounts[3];
+  beforeEach(async function() {
+    this.contract = await SportupToken.new({ from: defaultAccount });
+  });
+
+  describe("get token symbol", () => {
+    it("token Symbol  ", async function() {
+      const symbol = await this.contract.symbol();
+
+      assert.equal(symbol, "SUP");
+
+      // assert.equal(star[2],"story")
+    });
+  });
+
+  describe("get Supply ", () => {
+    it("token supply  ", async function() {
+      const supply = await this.contract.totalSupply();
+      assert.equal(1000000000, new BigNumber(supply));
+    });
+  });
+
+  describe("owner balance", () => {
+    it("owner balance ", async function() {
+      const balance = await this.contract.balanceOf(defaultAccount);
+
+      assert.equal(1000000000, new BigNumber(balance));
+    });
+  });
+
+  //transfer
+
+  describe("transfer to user1", () => {
+    it("owner balance ", async function() {
+      await this.contract.transfer(user2, 5000, { from: defaultAccount });
+      const balanceOwner = await this.contract.balanceOf(defaultAccount);
+
+      const balance2 = await this.contract.balanceOf(user2);
+
+      assert.equal(
+        1000000000 - 5000,
+        new BigNumber(balanceOwner),
+        "wrong owner new balance "
+      );
+
+      assert.equal(5000, new BigNumber(balance2));
+
+      await this.contract.approve(user3, 1000, { from: user2 });
+
+      await this.contract.transferFrom(user2, user1, 300, { from: user3 });
+      const balance1 = await this.contract.balanceOf(user1);
+
+      assert.equal(300, new BigNumber(balance1), "wrong owner new balance ");
+
+      const balance2_new = await this.contract.balanceOf(user2);
+
+      let puase = await this.contract.paused();
+      console.log(puase);
+
+      await this.contract.pause();
+      puase = await this.contract.paused();
+      console.log(puase);
+
+      await this.contract.transferFrom(user2, user1, 300, { from: user3 });
+      // const balance1 = await this.contract.balanceOf(user1);
+
+      await this.contract.unpause();
+      puase = await this.contract.paused();
+      console.log(puase);
+
+      assert.equal(5000 - 300, new BigNumber(balance2_new));
+    });
+  });
+});
+var expectThrow = async function(promise) {
+  try {
+    await promise;
+  } catch (error) {
+    assert.exists(error);
+    return;
+  }
+
+  assert.fail("Expected an error but didnt see one!");
+};
