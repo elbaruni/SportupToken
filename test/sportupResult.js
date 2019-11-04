@@ -17,12 +17,13 @@ contract("SportupResult", accounts => {
     await SportupTokenIn.transfer(this.contract.address, 1000000, {
       from: defaultAccount
     });
+    await this.contract.setRewardRatio(20000, { from: defaultAccount });
   });
 
   describe("get -----", () => {
     it("------- ", async function() {
       await this.contract.submit(1, "1221", "111", { from: user1 });
-      let tx = await this.contract.submit(1, "2221", "111", { from: user1 });
+      let tx = await this.contract.submit(1, "2221", "111", { from: user2 });
 
       let result = await this.contract.get_submissions("111", 1);
       console.log(tx);
@@ -48,7 +49,7 @@ contract("SportupResult", accounts => {
       await this.contract.submit(1, "2221", "111", { from: user2 });
       let result2 = await this.contract.get_submissions("111", 1);
       const balnce1after = await SportupTokenIn.balanceOf(user1);
-      console.log("balance after", balnce1after);
+      console.log("balance after", balnce1after.toNumber());
 
       // assert.equal(star[2],"story")
     });
