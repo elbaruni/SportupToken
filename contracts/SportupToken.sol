@@ -19,7 +19,7 @@ contract SportupToken is  ERC20, ERC20Detailed,ERC20Capped,ERC20Pausable {
     /**
      * @dev Constructor that gives _msgSender() all of existing tokens.
      */
-    constructor () public ERC20Capped(uint256(10 ** 9)) ERC20Detailed("Sportup", "SUP", 0) {
-        _mint(msg.sender, 1000000000);
+    constructor () public ERC20Capped(uint256(10 ** 9) * (10 ** 18 )) ERC20Detailed("Sportup", "SUP", 18) {
+        _mint(msg.sender, (10 ** 9) * (10 ** 18));
     }
 }

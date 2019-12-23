@@ -1,59 +1,74 @@
-const SportupResult = artifacts.require("SportupResult");
+const SportupResultData = artifacts.require("SportupResultData");
+const SportupResultApp = artifacts.require("SportupResultApp");
 var SportupToken = artifacts.require("SportupToken");
 var BigNumber = web3.utils.BN;
 let SportupTokenIn;
+let SportupResultDataIn;
+let SportupResultAppIn;
 contract("SportupResult", accounts => {
-  var defaultAccount = accounts[0];
-  var user1 = accounts[1];
-  var user2 = accounts[2];
-  var user3 = accounts[3];
+  const defaultAccount = accounts[0];
+  const user1 = accounts[1];
+  const user2 = accounts[2];
+  const user3 = accounts[3];
+  const oracle = accounts[6];
+  let user1Bal;
+  let user2Bal;
+  let user3Bal;
+  let oracleBal;
+  const tokenAmnt = "1000000";
+
   beforeEach(async function() {
     SportupTokenIn = await SportupToken.new({ from: defaultAccount });
-    console.log("mmm", SportupTokenIn.address);
-    this.contract = await SportupResult.new(SportupTokenIn.address, {
+    SportupResultDataIn = await SportupResultData.new({ from: defaultAccount });
+    SportupResultAppIn = await SportupResultApp.new(
+      SportupTokenIn.address,
+      SportupResultDataIn.address,
+      { from: defaultAccount }
+    );
+
+    await SportupTokenIn.transfer(
+      SportupResultAppIn.address,
+      web3.utils.toWei(tokenAmnt, "ether"),
+      {
+        from: defaultAccount
+      }
+    );
+    //await SportupResultAppIn.setRewardRatio(20000, { from: defaultAccount });
+
+    await SportupResultDataIn.authorizeContract(SportupResultAppIn.address, {
       from: defaultAccount
     });
-    console.log("ttt", this.contract.address);
-    await SportupTokenIn.transfer(this.contract.address, 1000000, {
-      from: defaultAccount
-    });
-    await this.contract.setRewardRatio(20000, { from: defaultAccount });
+
+    await SportupResultAppIn.authorizeOracle(oracle, { from: defaultAccount });
   });
 
-  describe("get -----", () => {
+  describe("check blockstack and eth address ", () => {
     it("------- ", async function() {
-      await this.contract.submit(1, "1221", "111", { from: user1 });
-      let tx = await this.contract.submit(1, "2221", "111", { from: user2 });
+      let status1 = await SportupResultAppIn.blockstackethAddressStatus(
+        "elbaruni.blockstack.id",
+        {
+          from: user2
+        }
+      );
+      tx = await SportupResultAppIn.addBlockstackID("elbaruni.blockstack.id", {
+        from: user2
+      });
+      console.log(tx.logs);
 
-      let result = await this.contract.get_submissions("111", 1);
-      console.log(tx);
-      console.log("result", result);
+      let status2 = await SportupResultAppIn.blockstackethAddressStatus(
+        "elbaruni.blockstack.id",
+        {
+          from: user2
+        }
+      );
 
-      // assert.equal(star[2],"story")
+      let tx3 = await SportupResultAppIn.updateBlockstackEthAddress(
+        "elbaruni.blockstack.id",
+        user2,
+        user3
+      );
+
+      console.log(status1.logs, status2.logs, tx3.logs);
     });
   });
-
-  describe("get Balance of sportup result contract", () => {
-    it("------- ", async function() {
-      const bal = await SportupTokenIn.balanceOf(this.contract.address);
-      console.log("balance of", bal.toNumber());
-    });
-  });
-  describe("get2 -----", () => {
-    it("------- ", async function() {
-      const balnce1before = await SportupTokenIn.balanceOf(user1);
-      console.log("balance after", balnce1before);
-
-      await this.contract.submit(1, "1221", "111", { from: user1 });
-      let result1 = await this.contract.get_submissions("111", 0);
-      await this.contract.submit(1, "2221", "111", { from: user2 });
-      let result2 = await this.contract.get_submissions("111", 1);
-      const balnce1after = await SportupTokenIn.balanceOf(user1);
-      console.log("balance after", balnce1after.toNumber());
-
-      // assert.equal(star[2],"story")
-    });
-  });
-
-  //transfer
 });

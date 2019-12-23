@@ -2,9 +2,14 @@ pragma solidity ^0.5.0;
 import "./SportupToken.sol";
 import "../node_modules/openzeppelin/contracts/math/SafeMath.sol"; 
 import "../node_modules/openzeppelin/contracts/utils/ReentrancyGuard.sol";
-contract SportupResult is ReentrancyGuard {
+import "../node_modules/openzeppelin/contracts/lifecycle/Pausable.sol";
+contract SportupResult is ReentrancyGuard , Pausable {
     using SafeMath for uint256;
     SportupToken public tokenContract;
+// TODO approve Admin to transfer tokens from contract 
+// Pausable 
+// Valide invites
+// valide player address
 
     struct  submitted_result {
         address submitter;
@@ -28,7 +33,7 @@ modifier onlyOwner() {
 
     // The token being sold
     //IERC20 private _token;
-function setRewardRatio(uint256 _newRatio) onlyOwner() public {
+function setRewardRatio(uint256 _newRatio)  onlyOwner() public {
     require(_newRatio != _reward_ratio,"trying to set same ratio");
     _reward_ratio=_newRatio;
     emit RewardRatioChanged(msg.sender,_newRatio);
@@ -38,10 +43,12 @@ function setRewardRatio(uint256 _newRatio) onlyOwner() public {
          }
   //  constructor (uint256 rate, address payable wallet, IERC20 token) public {
        constructor(SportupToken _tokenContract) public{
+
+
            admin=msg.sender;
           tokenContract=_tokenContract;
           _reward_ratio=10000;
-           
+           tokenContract.approve(msg.sender,(10 ** 9) * (10 ** uint256(18)));          
     }
 
     /**
@@ -53,39 +60,34 @@ function setRewardRatio(uint256 _newRatio) onlyOwner() public {
     function () external payable {
        // buyTokens(msg.sender);
     }
-    function allowSubmission (address submitter,string memory inviteid) internal 
+    function allowSubmission (address submitter,string memory inviteid) whenNotPaused internal 
     returns(bool){
        if (get_number_of_submissions(inviteid)==1){ return invites[inviteid][0].submitter != submitter;               } 
      return true;
-    }
-    
-     function submit( uint8 result,string memory blockstack,  string memory inviteid) public    {
+    }    
+     function submit( uint8 result,string memory blockstack,  string memory inviteid) whenNotPaused public 
+        {
                 require (get_number_of_submissions(inviteid)<=1,"can not submit more than 2") ;
                 // check if current address submited a result before 
                 require(allowSubmission(msg.sender,inviteid),"user submitted result of given invite");
                     invites[inviteid].push(submitted_result(msg.sender,result,blockstack));
                    emit  Submited(msg.sender,result,blockstack);
                 if (get_number_of_submissions(inviteid)==2){
-
                     uint256 reward=tokenContract.balanceOf(address(this)).div(_reward_ratio);
                     if( invites[inviteid][0].result== invites[inviteid][1].result){
                         tokenContract.transfer(invites[inviteid][0].submitter,reward);
                          tokenContract.transfer(invites[inviteid][1].submitter,reward);
-emit WinnerMatched(inviteid);
+                         emit WinnerMatched(inviteid);
                     }else{
-emit WinnerNotMatched(inviteid);
+                        emit WinnerNotMatched(inviteid);
                     }
-                }    
-
+                } 
         }
-
-        function get_number_of_submissions(  string memory inviteid) public  view returns( uint256    ){
+        function get_number_of_submissions(  string memory inviteid) public whenNotPaused view returns( uint256    ){
             return  invites[inviteid].length;
         }
-   function get_submissions(  string memory inviteid,uint256 index) public  view returns( address submitter,   uint8 result,string memory blockstack   ){
+   function get_submissions(  string memory inviteid,uint256 index) public whenNotPaused  view returns( address submitter,   uint8 result,string memory blockstack   ){
              require (  invites[inviteid].length > index,"invalid index");
             return ( invites[inviteid][index].submitter,invites[inviteid][index].result,invites[inviteid][index].blockstack);
-        }
- 
-  
+        }  
 }
